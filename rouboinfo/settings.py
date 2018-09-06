@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['app.airoubo.com']
 
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 # Application definition
 
