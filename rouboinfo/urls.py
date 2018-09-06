@@ -21,7 +21,7 @@ from django.conf.urls import url, include
 # 使用URL路由来管理我们的API
 # 另外添加登录相关的URL
 urlpatterns = [
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    path('admin/', admin.site.urls),
-    url(r'^rouboapi/', include('rouboapi.urls'))
+    #url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    #path('admin/', admin.site.urls),
+    url(r'^roubo/rouboapi/', include('rouboapi.urls'))
 ]
