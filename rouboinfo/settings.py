@@ -25,7 +25,7 @@ SECRET_KEY = '2+5*u%m2)uz$hd9bt^b5mb!7j42=m7&)dq$7y*txc746xvku46'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['app.airoubo.com']
 
 
 # Application definition
