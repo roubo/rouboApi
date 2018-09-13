@@ -21,3 +21,20 @@ class DeviceReport(models.Model):
     ip_address = models.CharField(max_length=50)
 
 
+
+class Respage01Info(models.Model):
+    """
+    respage 01 相关的数据
+    """
+    time = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=500)
+    detail_url = models.URLField(max_length=500)
+    rate = models.FloatField()
+    lat = models.FloatField()
+    lng = models.FloatField()
+
+    class Meta:
+        db_table = "respage01"
+
+
