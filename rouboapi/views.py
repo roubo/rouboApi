@@ -1,11 +1,13 @@
 from rouboapi.serializers import DeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
+from rouboapi.serializers import Respage01CountSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rouboapi.models import Respage01Info
 from datetime import datetime
 import pandas as pd
+from django.db.models import Count
 
 
 class DeviceReport(APIView):
@@ -57,4 +59,8 @@ class Respage01(APIView):
             dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
             queryset = Respage01Info.objects.filter(time__in=dateList)
             serializer = Respage01Serializer(queryset, many=True)
+        elif req['type'] == 'count':
+            dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
+            queryset = Respage01Info.objects.filter(time__in=dateList).values('time').annotate(count=Count('id'))
+            serializer = Respage01CountSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
