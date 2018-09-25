@@ -1,13 +1,20 @@
 from rouboapi.serializers import DeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
 from rouboapi.serializers import Respage01CountSerializer
+from rouboapi.serializers import Respage01GoneSerializer
+from rouboapi.serializers import Respage01NewSerializer
+from rouboapi.serializers import Respage01UnionSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rouboapi.models import Respage01Info
+from rouboapi.models import Respage01New
+from rouboapi.models import Respage01Gone
+from rouboapi.models import Respage01Union
 from datetime import datetime
 import pandas as pd
 from django.db.models import Count
+from django.core.cache import cache
 
 
 class DeviceReport(APIView):
@@ -46,14 +53,14 @@ class Respage01(APIView):
         :param end_time:
         :return:
         """
-        print("------------")
         dateList = [datetime.strftime(x, "%Y_%m_%d")
                     for x in list(pd.date_range(start=start_time.replace('_',''), end=end_time.replace('_','')))]
         return dateList
 
+
     def get(self, request, format=None):
         req = request.query_params
-        if 'type' not in req or 'start_time' not in req or 'end_time' not in req:
+        if 'type' not in req:
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
         if req['type'] == 'location':
             dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
@@ -63,4 +70,16 @@ class Respage01(APIView):
             dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
             queryset = Respage01Info.objects.filter(time__in=dateList).values('time').annotate(count=Count('id'))
             serializer = Respage01CountSerializer(queryset, many=True)
+        elif req['type'] == 'stat':
+            querysetNew = Respage01New.objects.all()
+            serializerNew = Respage01NewSerializer(querysetNew, many=True)
+            querysetGone = Respage01Gone.objects.all()
+            serializerGone = Respage01GoneSerializer(querysetGone, many=True)
+            querysetUnion = Respage01Union.objects.all()
+            serializerUnion = Respage01UnionSerializer(querysetUnion, many=True)
+            return Response({
+               'new': serializerNew.data,
+               'gone' : serializerGone.data,
+                'union': serializerUnion.data
+            }, status=status.HTTP_200_OK)
         return Response(serializer.data, status=status.HTTP_200_OK)

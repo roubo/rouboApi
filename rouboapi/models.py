@@ -38,3 +38,49 @@ class Respage01Info(models.Model):
         db_table = "respage01"
 
 
+
+class Respage01Gone(models.Model):
+    """
+    respage 01 店面减少 相关的数据
+    """
+    time = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=500)
+    detail_url = models.URLField(max_length=500)
+    rate = models.FloatField()
+    lat = models.FloatField()
+    lng = models.FloatField()
+
+    class Meta:
+        db_table = "respage01Gone"
+
+class Respage01New(models.Model):
+    """
+    respage 01 店面增加 相关的数据
+    """
+    time = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=500)
+    detail_url = models.URLField(max_length=500)
+    rate = models.FloatField()
+    lat = models.FloatField()
+    lng = models.FloatField()
+
+    class Meta:
+        db_table = "respage01New"
+
+
+class Respage01Union(models.Model):
+    """
+    respage 01 店面集合 相关的数据
+    """
+    time = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
+    address = models.CharField(max_length=500)
+    detail_url = models.URLField(max_length=500)
+    rate = models.FloatField()
+    lat = models.FloatField()
+    lng = models.FloatField()
+
+    class Meta:
+        db_table = "respage01Union"
