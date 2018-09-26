@@ -1,5 +1,6 @@
 from rouboapi.serializers import DeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
+from rouboapi.serializers import Respage02Serializer
 from rouboapi.serializers import Respage01CountSerializer
 from rouboapi.serializers import Respage01GoneSerializer
 from rouboapi.serializers import Respage01NewSerializer
@@ -11,10 +12,10 @@ from rouboapi.models import Respage01Info
 from rouboapi.models import Respage01New
 from rouboapi.models import Respage01Gone
 from rouboapi.models import Respage01Union
-from datetime import datetime
+from rouboapi.models import Respage02Info
+from datetime import datetime, timedelta
 import pandas as pd
 from django.db.models import Count
-from django.core.cache import cache
 
 
 class DeviceReport(APIView):
@@ -82,4 +83,41 @@ class Respage01(APIView):
                'gone' : serializerGone.data,
                 'union': serializerUnion.data
             }, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class Respage02(APIView):
+    """
+    获取respage02相关的数据
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    def rangeTime(self, start_time, end_time):
+        """
+        获取时间区间
+        :param start_time:
+        :param end_time:
+        :return:
+        """
+        res = []
+        start = datetime.strptime(start_time, '%Y_%m_%d_%H')
+        end = datetime.strptime(end_time, '%Y_%m_%d_%H')
+        step = timedelta(hours=1)
+
+        while start <= end:
+            res.append(start.strftime('%Y_%m_%d_%H'))
+            start += step
+        return res
+
+
+    def get(self, request, format=None):
+        req = request.query_params
+        if 'type' not in req:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        if req['type'] == 'location':
+            dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
+            queryset = Respage02Info.objects.filter(time__in=dateList)
+            serializer = Respage02Serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

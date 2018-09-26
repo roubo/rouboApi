@@ -21,7 +21,6 @@ class DeviceReport(models.Model):
     ip_address = models.CharField(max_length=50)
 
 
-
 class Respage01Info(models.Model):
     """
     respage 01 相关的数据
@@ -38,7 +37,6 @@ class Respage01Info(models.Model):
         db_table = "respage01"
 
 
-
 class Respage01Gone(models.Model):
     """
     respage 01 店面减少 相关的数据
@@ -53,6 +51,7 @@ class Respage01Gone(models.Model):
 
     class Meta:
         db_table = "respage01Gone"
+
 
 class Respage01New(models.Model):
     """
@@ -84,3 +83,17 @@ class Respage01Union(models.Model):
 
     class Meta:
         db_table = "respage01Union"
+
+
+class Respage02Info(models.Model):
+    """
+    respage 02 相关的数据
+    """
+    time = models.CharField(max_length=100)
+    bikeid = models.CharField(max_length=200)
+    lat = models.FloatField()
+    lng = models.FloatField()
+    type = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "respage02"

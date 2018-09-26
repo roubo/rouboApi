@@ -5,6 +5,8 @@ from rouboapi.models import Respage01Gone
 from rouboapi.models import Respage01New
 from rouboapi.models import Respage01Union
 
+from rouboapi.models import Respage02Info
+
 
 class DeviceReportSerializer(serializers.HyperlinkedModelSerializer):
     """
@@ -66,3 +68,13 @@ class Respage01CountSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Respage01Info
         fields = ('time', 'count')
+
+
+class Respage02Serializer(serializers.HyperlinkedModelSerializer):
+    """
+    序列化Respage02相关的数据
+    """
+
+    class Meta:
+        model = Respage02Info
+        fields = ('time', 'lat', 'lng', 'bikeid', 'type')
