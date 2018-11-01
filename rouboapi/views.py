@@ -5,6 +5,8 @@ from rouboapi.serializers import Respage01CountSerializer
 from rouboapi.serializers import Respage01GoneSerializer
 from rouboapi.serializers import Respage01NewSerializer
 from rouboapi.serializers import Respage01UnionSerializer
+from rouboapi.serializers import ProductHuntDayTopSerializer
+from rouboapi.serializers import ProductHuntMonthTopSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,6 +15,8 @@ from rouboapi.models import Respage01New
 from rouboapi.models import Respage01Gone
 from rouboapi.models import Respage01Union
 from rouboapi.models import Respage02Info
+from rouboapi.models import ProductHuntMonthTop
+from rouboapi.models import ProductHuntDayTop
 from datetime import datetime, timedelta
 import pandas as pd
 from django.db.models import Count
@@ -55,9 +59,8 @@ class Respage01(APIView):
         :return:
         """
         dateList = [datetime.strftime(x, "%Y_%m_%d")
-                    for x in list(pd.date_range(start=start_time.replace('_',''), end=end_time.replace('_','')))]
+                    for x in list(pd.date_range(start=start_time.replace('_', ''), end=end_time.replace('_', '')))]
         return dateList
-
 
     def get(self, request, format=None):
         req = request.query_params
@@ -79,8 +82,8 @@ class Respage01(APIView):
             querysetUnion = Respage01Union.objects.all()
             serializerUnion = Respage01UnionSerializer(querysetUnion, many=True)
             return Response({
-               'new': serializerNew.data,
-               'gone' : serializerGone.data,
+                'new': serializerNew.data,
+                'gone': serializerGone.data,
                 'union': serializerUnion.data
             }, status=status.HTTP_200_OK)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -111,7 +114,6 @@ class Respage02(APIView):
             start += step
         return res
 
-
     def get(self, request, format=None):
         req = request.query_params
         if 'type' not in req:
@@ -120,4 +122,21 @@ class Respage02(APIView):
             dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
             queryset = Respage02Info.objects.filter(time__in=dateList)
             serializer = Respage02Serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProductHuntTop(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, format=None):
+        req = request.query_params
+        if 'type' not in req:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        if req['type'] == 'month':
+            queryset = ProductHuntMonthTop.objects.filter(month=req['index'])
+            serializer = ProductHuntMonthTopSerializer(queryset, many=True)
+        if req['type'] == 'day':
+            queryset = ProductHuntDayTop.objects.filter(days=req['index'])
+            serializer = ProductHuntDayTopSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

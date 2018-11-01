@@ -97,3 +97,55 @@ class Respage02Info(models.Model):
 
     class Meta:
         db_table = "respage02"
+
+
+class ProductHuntMonthTop(models.Model):
+    """
+    PH月数据
+    """
+    comments_count = models.CharField(max_length=200)
+    day = models.CharField(max_length=200)
+    phid = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
+    tagline = models.CharField(max_length=200)
+    slug = models.CharField(max_length=200)
+    votes_count = models.CharField(max_length=200)
+    category_id = models.CharField(max_length=200)
+    created_at = models.CharField(max_length=200)
+    discussion_url = models.CharField(max_length=200)
+    image_url = models.CharField(max_length=200)
+    user_id = models.CharField(max_length=200)
+    user_name = models.CharField(max_length=200)
+    user_twitter_username = models.CharField(max_length=200)
+    user_website_url = models.CharField(max_length=200)
+    profile_url = models.CharField(max_length=200)
+    month = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = "ph_month_top"
+
+
+class ProductHuntDayTop(models.Model):
+    """
+    PH日数据
+    """
+    comments_count = models.CharField(max_length=200)
+    day = models.CharField(max_length=200)
+    phid = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
+    tagline = models.CharField(max_length=200)
+    slug = models.CharField(max_length=200)
+    votes_count = models.CharField(max_length=200)
+    category_id = models.CharField(max_length=200)
+    created_at = models.CharField(max_length=200)
+    discussion_url = models.CharField(max_length=200)
+    image_url = models.CharField(max_length=200)
+    user_id = models.CharField(max_length=200)
+    user_name = models.CharField(max_length=200)
+    user_twitter_username = models.CharField(max_length=200)
+    user_website_url = models.CharField(max_length=200)
+    profile_url = models.CharField(max_length=200)
+    days = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = "ph_day_top"

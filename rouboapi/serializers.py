@@ -6,6 +6,8 @@ from rouboapi.models import Respage01New
 from rouboapi.models import Respage01Union
 
 from rouboapi.models import Respage02Info
+from rouboapi.models import ProductHuntDayTop
+from rouboapi.models import ProductHuntMonthTop
 
 
 class DeviceReportSerializer(serializers.HyperlinkedModelSerializer):
@@ -78,3 +80,21 @@ class Respage02Serializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Respage02Info
         fields = ('time', 'lat', 'lng', 'bikeid', 'type')
+
+
+class ProductHuntMonthTopSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ProductHuntMonthTop
+        fields = (
+            'comments_count', 'day', 'phid', 'name', 'tagline', 'slug', 'votes_count', 'category_id', 'created_at',
+            'discussion_url', 'image_url', 'user_id', 'user_name', 'user_twitter_username', 'user_website_url',
+            'profile_url', 'month')
+
+
+class ProductHuntDayTopSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ProductHuntDayTop
+        fields = (
+            'comments_count', 'day', 'phid', 'name', 'tagline', 'slug', 'votes_count', 'category_id', 'created_at',
+            'discussion_url', 'image_url', 'user_id', 'user_name', 'user_twitter_username', 'user_website_url',
+            'profile_url', 'days')
