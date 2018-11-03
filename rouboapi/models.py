@@ -90,6 +90,7 @@ class Respage02Info(models.Model):
     respage 02 相关的数据
     """
     time = models.CharField(max_length=100)
+    day = models.CharField(max_length=100)
     bikeid = models.CharField(max_length=200)
     lat = models.FloatField()
     lng = models.FloatField()

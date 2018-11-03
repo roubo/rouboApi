@@ -118,9 +118,22 @@ class Respage02(APIView):
         req = request.query_params
         if 'type' not in req:
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        if req['type'] == 'now':
+            if 'day' not in req:
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
+            timelist = Respage02Info.objects.distinct().values("time").filter(day=req['day']).order_by('-time').all()
+            now = timelist[0]['time']
+            queryset = Respage02Info.objects.filter(day=req['day']).filter(time=now)
+            serializer = Respage02Serializer(queryset, many=True)
+        if req['type'] == 'timelist':
+            if 'day' not in req:
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
+            timelist = Respage02Info.objects.distinct().values("time").filter(day=req['day']).order_by('time').all()
+            return Response(timelist, status=status.HTTP_200_OK)
         if req['type'] == 'location':
-            dateList = self.rangeTime(start_time=req['start_time'], end_time=req['end_time'])
-            queryset = Respage02Info.objects.filter(time__in=dateList)
+            if 'day' not in req or 'time' not in req:
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
+            queryset = Respage02Info.objects.filter(day=req['day']).filter(time=req['time'])
             serializer = Respage02Serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -79,7 +79,7 @@ class Respage02Serializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Respage02Info
-        fields = ('time', 'lat', 'lng', 'bikeid', 'type')
+        fields = ('time', 'lat', 'lng', 'bikeid', 'type', 'day')
 
 
 class ProductHuntMonthTopSerializer(serializers.HyperlinkedModelSerializer):
