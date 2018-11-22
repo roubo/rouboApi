@@ -150,3 +150,20 @@ class ProductHuntDayTop(models.Model):
 
     class Meta:
         db_table = "ph_day_top"
+
+class OpenCards(models.Model):
+    """
+    OpenCards 项目
+    openid: 微信 openid
+    userinfo: 用户信息
+    bskeys: 业务值
+    backup：备用
+    """
+    openid = models.CharField(max_length=200)
+    userinfo = models.CharField(max_length=512)
+    bskeys = models.CharField(max_length=1024)
+    backup = models.CharField(max_length=2048)
+    session_key = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = "opencards"

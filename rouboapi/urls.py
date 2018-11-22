@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'v1/respage01/$', views.Respage01.as_view(), name='Respage01'),
     url(r'v1/respage02/$', views.Respage02.as_view(), name='Respage02'),
     url(r'v1/producthunt/top$', views.ProductHuntTop.as_view(), name='ProductHuntTop'),
+    url(r'v1/opencard/$', views.OpenCard.as_view(), name='OpenCards'),
 ]

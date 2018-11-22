@@ -7,6 +7,7 @@ from rouboapi.serializers import Respage01NewSerializer
 from rouboapi.serializers import Respage01UnionSerializer
 from rouboapi.serializers import ProductHuntDayTopSerializer
 from rouboapi.serializers import ProductHuntMonthTopSerializer
+from rouboapi.serializers import OpenCardsSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,9 +18,13 @@ from rouboapi.models import Respage01Union
 from rouboapi.models import Respage02Info
 from rouboapi.models import ProductHuntMonthTop
 from rouboapi.models import ProductHuntDayTop
+from rouboapi.models import OpenCards
+from django.db.models import Count
 from datetime import datetime, timedelta
 import pandas as pd
-from django.db.models import Count
+import requests
+import json
+from django.http import QueryDict
 
 
 class DeviceReport(APIView):
@@ -36,6 +41,7 @@ class DeviceReport(APIView):
         :param  device_id: 可以描述设备的id
         :param  ip_address: 公网ip地址
         """
+        print(request.query_params)
         serializer = DeviceReportSerializer(data=request.query_params)
         if serializer.is_valid():
             serializer.save()
@@ -153,3 +159,49 @@ class ProductHuntTop(APIView):
             queryset = ProductHuntDayTop.objects.filter(days=req['index'])
             serializer = ProductHuntDayTopSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class OpenCard(APIView):
+    """
+    OpenCards
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def wxCode2Session(self, code):
+        """
+        微信 code2Session 实现
+        :param code:
+        :return:
+        """
+        AppId = 'wx17dddea5d4fa8dce'
+        AppSecret = 'd5fe0741bc02f11820f459274d2299be'
+        try:
+            URL = 'https://api.weixin.qq.com/sns/jscode2session?appid=' + AppId + \
+                  "&secret=" + AppSecret + \
+                  "&js_code=" + code + \
+                  "&grant_type=authorization_code"
+            resp = requests.get(URL)
+            return json.loads(resp.text)
+        except:
+            return None
+
+    def get(self, request, format=None):
+        req = request.query_params
+        if 'type' not in req:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        if req['type'] == 'login' and 'wxcode' in req:
+            res = self.wxCode2Session(req['wxcode'])
+            if not res or 'openid' not in res:
+                return Response({"data":""}, status=status.HTTP_200_OK)
+            else:
+                openid = res['openid']
+                session_key = res['session_key']
+                if OpenCards.objects.filter(openid=openid):
+                    OpenCards.objects.filter(openid=openid).update(session_key=session_key)
+                else:
+                    data = "openid="+openid+"&userinfo=null&backup=null&bskeys=null&session_key=" + session_key
+                    serializer = OpenCardsSerializer(data=QueryDict(data))
+                    if serializer.is_valid():
+                        serializer.save()
+                return Response({"data": {"openid": openid}}, status=status.HTTP_200_OK)
