@@ -174,8 +174,9 @@ class OpenCard(APIView):
         :param code:
         :return:
         """
-        AppId = 'wx17dddea5d4fa8dce'
-        AppSecret = 'd5fe0741bc02f11820f459274d2299be'
+        # 非真实
+        AppId = 'wx17dddea5d4fa8dceer'
+        AppSecret = 'd5fe0741bc02f11820f459274d2299beer'
         try:
             URL = 'https://api.weixin.qq.com/sns/jscode2session?appid=' + AppId + \
                   "&secret=" + AppSecret + \
