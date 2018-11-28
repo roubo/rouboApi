@@ -1,4 +1,4 @@
-    from rouboapi.serializers import DeviceReportSerializer
+from rouboapi.serializers import DeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
 from rouboapi.serializers import Respage02Serializer
 from rouboapi.serializers import Respage01CountSerializer
