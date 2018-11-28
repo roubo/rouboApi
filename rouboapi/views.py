@@ -1,4 +1,4 @@
-from rouboapi.serializers import DeviceReportSerializer
+    from rouboapi.serializers import DeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
 from rouboapi.serializers import Respage02Serializer
 from rouboapi.serializers import Respage01CountSerializer
@@ -25,7 +25,10 @@ import pandas as pd
 import requests
 import json
 from django.http import QueryDict
+import io
+import sys
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
 
 class DeviceReport(APIView):
     """
@@ -175,8 +178,8 @@ class OpenCard(APIView):
         :return:
         """
         # 非真实
-        AppId = 'wx17dddea5d4fa8dceer'
-        AppSecret = 'd5fe0741bc02f11820f459274d2299beer'
+        AppId = 'wx17dddea5d4fa8dce'
+        AppSecret = 'd5fe0741bc02f11820f459274d2299be'
         try:
             URL = 'https://api.weixin.qq.com/sns/jscode2session?appid=' + AppId + \
                   "&secret=" + AppSecret + \
@@ -194,47 +197,52 @@ class OpenCard(APIView):
         :return:
         """
         # 非真实，google 自定义搜索的 key 和 id
-        APIKEY = 'AIzaSyAqxT53ptmvLDcKwLsh2YrWk6k'
+        APIKEY = 'AIzaSyAqxT53ptmvLDcKwLsh2YrWk6kTo'
         APICX = '010859235238722630878:8tuwg'
         result = []
         try:
-            URL = 'https://www.googleapis.com/customsearch/v1?key=' + APIKEY + 'cx=' + APICX + "key=" + key
+            URL = 'https://www.googleapis.com/customsearch/v1?key=' + APIKEY + '&cx=' + APICX + "&q=" + key
             resp = requests.get(URL)
             respjson = json.loads(resp.text)
+            skip = False
             for item in respjson['items']:
                 if 'displayLink' in item and item['displayLink'] == 'juejin.im':
                     if 'pagemap' in item and 'person' in item['pagemap']:
-                        result.append({
-                            'name': item['pagemap']['person']['name'],
-                            'userid': item['pagemap']['persion']['url'].split('/')[-1]
+                        for res in result:
+                            if res['userid'] == item['pagemap']['person'][-1]['url'].split('/')[-1]:
+                                skip = True
+                        if not skip:
+                            result.append({
+                                'name': item['pagemap']['person'][-1]['name'],
+                                'userid': item['pagemap']['person'][-1]['url'].split('/')[-1]
                         })
             return result
         except:
             return None
 
 
-def get(self, request, format=None):
-    req = request.query_params
-    if 'type' not in req:
-        return Response({}, status=status.HTTP_400_BAD_REQUEST)
-    if req['type'] == 'login' and 'wxcode' in req:
-        res = self.wxCode2Session(req['wxcode'])
-        if not res or 'openid' not in res:
-            return Response({"data": ""}, status=status.HTTP_200_OK)
-        else:
-            openid = res['openid']
-            session_key = res['session_key']
-            if OpenCards.objects.filter(openid=openid):
-                OpenCards.objects.filter(openid=openid).update(session_key=session_key)
+    def get(self, request, format=None):
+        req = request.query_params
+        if 'type' not in req:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        if req['type'] == 'login' and 'wxcode' in req:
+            res = self.wxCode2Session(req['wxcode'])
+            if not res or 'openid' not in res:
+                return Response({"data": ""}, status=status.HTTP_200_OK)
             else:
-                data = "openid=" + openid + "&userinfo=null&backup=null&bskeys=null&session_key=" + session_key
-                serializer = OpenCardsSerializer(data=QueryDict(data))
-                if serializer.is_valid():
-                    serializer.save()
-            return Response({"data": {"openid": openid}}, status=status.HTTP_200_OK)
-    elif req['type'] == 'search' and 'from' in req and req['from'] == 'juejin' and 'key' in req:
-        res = self.searchJueJinByGoogle(req['key'])
-        if res:
-            return Response({"data": res}, status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                openid = res['openid']
+                session_key = res['session_key']
+                if OpenCards.objects.filter(openid=openid):
+                    OpenCards.objects.filter(openid=openid).update(session_key=session_key)
+                else:
+                    data = "openid=" + openid + "&userinfo=null&backup=null&bskeys=null&session_key=" + session_key
+                    serializer = OpenCardsSerializer(data=QueryDict(data))
+                    if serializer.is_valid():
+                        serializer.save()
+                return Response({"data": {"openid": openid}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'search' and 'from' in req and req['from'] == 'juejin' and 'key' in req:
+            res = self.searchJueJinByGoogle(req['key'])
+            if res:
+                return Response({"data": res}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
