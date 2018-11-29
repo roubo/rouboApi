@@ -280,10 +280,14 @@ class OpenCard(APIView):
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'bskeys' and 'openid' in req:
-           if OpenCards.objects.filter(openid=req['openid']):
-               query = OpenCards.objects.get(openid=req['openid'])
-               serializer = OpenCardsSerializer(query)
-               data = serializer.data
-               data['bskeys'] = eval(data['bskeys'])
-               return Response({"data": data['bskeys']}, status=status.HTTP_200_OK)
-
+            if OpenCards.objects.filter(openid=req['openid']):
+                query = OpenCards.objects.get(openid=req['openid'])
+                serializer = OpenCardsSerializer(query)
+                data = serializer.data
+                try:
+                    data['bskeys'] = eval(data['bskeys'])
+                    return Response({"data": data['bskeys']}, status=status.HTTP_200_OK)
+                except:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
