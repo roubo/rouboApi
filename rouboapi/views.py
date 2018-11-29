@@ -245,6 +245,7 @@ class OpenCard(APIView):
                 bskeys['juejin']['totalCollections'] = respjson['d'][uid]['totalCollectionsCount']
                 bskeys['juejin']['postedEntries'] = respjson['d'][uid]['postedEntriesCount']
                 bskeys['juejin']['totalComments'] = respjson['d'][uid]['totalCommentsCount']
+                bskeys['juejin']['name'] = respjson['d'][uid]['username']
                 bskeys['juejin']['uid'] = uid
                 OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
                 return True
