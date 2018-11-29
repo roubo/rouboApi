@@ -245,8 +245,12 @@ class OpenCard(APIView):
                 bskeys['juejin']['totalCollections'] = respjson['d'][uid]['totalCollectionsCount']
                 bskeys['juejin']['postedEntries'] = respjson['d'][uid]['postedEntriesCount']
                 bskeys['juejin']['totalComments'] = respjson['d'][uid]['totalCommentsCount']
+                bskeys['juejin']['uid'] = uid
                 OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
                 return True
+            else:
+                return False
+        else: return False
 
     def get(self, request, format=None):
         req = request.query_params
@@ -279,14 +283,15 @@ class OpenCard(APIView):
                 return Response({"data": []}, status=status.HTTP_200_OK)
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        elif req['type'] == 'bskeys' and 'openid' in req:
+        elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'juejin':
             if OpenCards.objects.filter(openid=req['openid']):
-                query = OpenCards.objects.get(openid=req['openid'])
-                serializer = OpenCardsSerializer(query)
-                data = serializer.data
                 try:
+                    self.getJueJinInfo(req['openid'], req['uid'])
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
                     data['bskeys'] = eval(data['bskeys'])
-                    return Response({"data": data['bskeys']}, status=status.HTTP_200_OK)
+                    return Response({"data": data['bskeys']['juejin']}, status=status.HTTP_200_OK)
                 except:
                     return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
