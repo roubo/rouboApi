@@ -314,7 +314,11 @@ class OpenCard(APIView):
         elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'juejin':
             if OpenCards.objects.filter(openid=req['openid']):
                 try:
-                    self.getAndSaveJueJinInfo(req['openid'], req['uid'])
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
+                    data['bskeys'] = eval(data['bskeys'])
+                    self.getAndSaveJueJinInfo(req['openid'], data['bskeys']['juejin']['uid'])
                     query = OpenCards.objects.get(openid=req['openid'])
                     serializer = OpenCardsSerializer(query)
                     data = serializer.data
