@@ -222,7 +222,7 @@ class OpenCard(APIView):
         except:
             return None
 
-    def getJueJinInfo(self, openid, uid):
+    def getAndSaveJueJinInfo(self, openid, uid):
         """
         获取具体的掘金用户信息
         :param uid:
@@ -250,7 +250,25 @@ class OpenCard(APIView):
                 return True
             else:
                 return False
-        else: return False
+        else:
+            return False
+
+    def saveConnectInfo(self, openid, phone, email, name):
+        if OpenCards.objects.filter(openid=openid):
+            query = OpenCards.objects.get(openid=openid)
+            bskeys = model_to_dict(query)['bskeys']
+            if bskeys and bskeys != 'xxx' and bskeys != 'null':
+                bskeys = eval(bskeys)
+            else:
+                bskeys = {}
+            bskeys['connect'] = {}
+            bskeys['connect']['name'] = name
+            bskeys['connect']['phone'] = phone
+            bskeys['connect']['email'] = email
+            OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
+            return True
+        else:
+            return False
 
     def get(self, request, format=None):
         req = request.query_params
@@ -278,20 +296,41 @@ class OpenCard(APIView):
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'juejin':
-            res = self.getJueJinInfo(req['openid'], req['uid'])
+            res = self.getAndSaveJueJinInfo(req['openid'], req['uid'])
             if res:
                 return Response({"data": []}, status=status.HTTP_200_OK)
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'connect':
+            try:
+                res = self.saveConnectInfo(req['openid'], req['phone'], req['email'], req['name'])
+                if res:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except:
+                return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'juejin':
             if OpenCards.objects.filter(openid=req['openid']):
                 try:
-                    self.getJueJinInfo(req['openid'], req['uid'])
+                    self.getAndSaveJueJinInfo(req['openid'], req['uid'])
                     query = OpenCards.objects.get(openid=req['openid'])
                     serializer = OpenCardsSerializer(query)
                     data = serializer.data
                     data['bskeys'] = eval(data['bskeys'])
                     return Response({"data": data['bskeys']['juejin']}, status=status.HTTP_200_OK)
+                except:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'connect':
+            if OpenCards.objects.filter(openid=req['openid']):
+                try:
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
+                    data['bskeys'] = eval(data['bskeys'])
+                    return Response({"data": data['bskeys']['connect']}, status=status.HTTP_200_OK)
                 except:
                     return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
