@@ -28,6 +28,9 @@ from django.http import QueryDict
 import io
 import sys
 from django.forms.models import model_to_dict
+from bs4 import BeautifulSoup
+import bs4
+from selenium import webdriver
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
 
@@ -234,8 +237,8 @@ class OpenCard(APIView):
             'X-App-Name': 'haruki',
             'X-App-Version': '4.1.0',
             'X-Device-Guid': '869033024218829',
-            'X-Timestamp': '1543477283',
-            'X-Auth-1': 'd9e30a6953fd44ed7d932307af3961c7',
+            'X-Timestamp': '1543483341',
+            'X-Auth-1': '326b774a36f25bff4b536dd3296a9139',
             'X-NETWORK': '1',
             'Connection': 'Keep-Alive',
             'Accept-Encoding': 'gzip',
@@ -245,12 +248,45 @@ class OpenCard(APIView):
         result = []
         try:
             URL = 'https://s0.jianshuapi.com/v3/search/all?q=' + key
-            resp = requests.get(URL, headers=headers)
+            resp = requests.get(URL, headers=headers, verify=False)
             respjson = json.loads(resp.text)
             result = respjson['users']
             return result
         except:
             return result
+
+    def searchJianShuByH5(self, key):
+        result = []
+        URL = 'https://www.jianshu.com/search?page=1&type=user&q=' + key
+        option = webdriver.ChromeOptions()
+        option.add_argument('headless')
+        option.add_argument('--headless')
+        option.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(chrome_options=option, executable_path='/Users/JunJian/Downloads/chromedriver')
+        driver.get(URL)
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')
+        infos = soup.find_all('div', attrs={'class': 'info'})
+        for info in infos:
+            res = {}
+            for child in info.children:
+                if isinstance(child, bs4.element.Tag):
+                    if child.attrs and 'href' in child.attrs:
+                        res['uid'] = child.attrs['href'].split('/')[2]
+                    for ch in child.children:
+                        if isinstance(ch, bs4.element.Tag):
+                            for chch in ch.children:
+                                if '关注' in chch.string:
+                                    res['followers'] = chch.string.strip().split(' ')[-1]
+                                if '文章' in chch.string:
+                                    res['postedPosts'] = chch.string.strip().split(' ')[-1]
+                                if '写了' in chch.string:
+                                    res['totalCollections'] = chch.string.strip()
+                        else:
+                            if ch.string != ' ':
+                                res['name'] = ch.string.strip()
+            result.append(res)
+        return result
 
     def getAndSaveJueJinInfo(self, openid, uid):
         """
@@ -342,7 +378,7 @@ class OpenCard(APIView):
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'search' and 'from' in req and req['from'] == 'jianshu' and 'key' in req:
-            res = self.searchJianShu(req['key'])
+            res = self.searchJianShuByH5(req['key'])
             if res:
                 return Response({"data": res}, status=status.HTTP_200_OK)
             else:
