@@ -27,8 +27,10 @@ import json
 from django.http import QueryDict
 import io
 import sys
+from django.forms.models import model_to_dict
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
+
 
 class DeviceReport(APIView):
     """
@@ -215,11 +217,36 @@ class OpenCard(APIView):
                             result.append({
                                 'name': item['pagemap']['person'][-1]['name'],
                                 'userid': item['pagemap']['person'][-1]['url'].split('/')[-1]
-                        })
+                            })
             return result
         except:
             return None
 
+    def getJueJinInfo(self, openid, uid):
+        """
+        获取具体的掘金用户信息
+        :param uid:
+        :return:
+        """
+        URL = 'https://lccro-api-ms.juejin.im/v1/get_multi_user?cols=objectId%7Cusername%7Cavatar_large%7CavatarLarge%7Crole%7Ccompany%7CjobTitle%7Cself_description%7CselfDescription%7CblogAddress%7CisUnitedAuthor%7CisAuthor%7CauthData%7CtotalHotIndex%7CpostedEntriesCount%7CpostedPostsCount%7CcollectedEntriesCount%7CcollectionSetCount%7CsubscribedTagsCount%7CfolloweesCount%7CfollowersCount&src=ios&token=xxx&ids=' + uid
+        resp = requests.get(URL)
+        respjson = json.loads(resp.text)
+        if respjson:
+            if OpenCards.objects.filter(openid=openid):
+                query = OpenCards.objects.get(openid=openid)
+                bskeys = model_to_dict(query)['bskeys']
+                if bskeys and bskeys != 'xxx' and bskeys != 'null':
+                    bskeys = eval(bskeys)
+                else:
+                    bskeys = {}
+                bskeys['juejin'] = {}
+                bskeys['juejin']['followers'] = respjson['d'][uid]['followersCount']
+                bskeys['juejin']['totalViews'] = respjson['d'][uid]['totalViewsCount']
+                bskeys['juejin']['totalCollections'] = respjson['d'][uid]['totalCollectionsCount']
+                bskeys['juejin']['postedEntries'] = respjson['d'][uid]['postedEntriesCount']
+                bskeys['juejin']['totalComments'] = respjson['d'][uid]['totalCommentsCount']
+                OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
+                return True
 
     def get(self, request, format=None):
         req = request.query_params
@@ -246,3 +273,17 @@ class OpenCard(APIView):
                 return Response({"data": res}, status=status.HTTP_200_OK)
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'juejin':
+            res = self.getJueJinInfo(req['openid'], req['uid'])
+            if res:
+                return Response({"data": []}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'bskeys' and 'openid' in req:
+           if OpenCards.objects.filter(openid=req['openid']):
+               query = OpenCards.objects.get(openid=req['openid'])
+               serializer = OpenCardsSerializer(query)
+               data = serializer.data
+               data['bskeys'] = eval(data['bskeys'])
+               return Response({"data": data['bskeys']}, status=status.HTTP_200_OK)
+
