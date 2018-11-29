@@ -222,6 +222,36 @@ class OpenCard(APIView):
         except:
             return None
 
+    def searchJianShu(self, key):
+        """
+        通过简书 API 获取简书搜索信息
+        :param key:
+        :return:
+        """
+        headers = {
+            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 8.0.0; MIX 2 MIUI/8.11.22) okhttp/3.3.0 haruki/4.1.0',
+            'HOST': 's0.jianshuapi.com',
+            'X-App-Name': 'haruki',
+            'X-App-Version': '4.1.0',
+            'X-Device-Guid': '869033024218829',
+            'X-Timestamp': '1543477283',
+            'X-Auth-1': 'd9e30a6953fd44ed7d932307af3961c7',
+            'X-NETWORK': '1',
+            'Connection': 'Keep-Alive',
+            'Accept-Encoding': 'gzip',
+            'If-None-Match': 'W/"db59a468cf84fb228826f34cea88ae90"'
+        }
+
+        result = []
+        try:
+            URL = 'https://s0.jianshuapi.com/v3/search/all?q=' + key
+            resp = requests.get(URL, headers=headers)
+            respjson = json.loads(resp.text)
+            result = respjson['users']
+            return result
+        except:
+            return result
+
     def getAndSaveJueJinInfo(self, openid, uid):
         """
         获取具体的掘金用户信息
@@ -243,7 +273,7 @@ class OpenCard(APIView):
                 bskeys['juejin']['followers'] = respjson['d'][uid]['followersCount']
                 bskeys['juejin']['totalViews'] = respjson['d'][uid]['totalViewsCount']
                 bskeys['juejin']['totalCollections'] = respjson['d'][uid]['totalCollectionsCount']
-                bskeys['juejin']['postedEntries'] = respjson['d'][uid]['postedEntriesCount']
+                bskeys['juejin']['postedPosts'] = respjson['d'][uid]['postedPostsCount']
                 bskeys['juejin']['totalComments'] = respjson['d'][uid]['totalCommentsCount']
                 bskeys['juejin']['name'] = respjson['d'][uid]['username']
                 bskeys['juejin']['uid'] = uid
@@ -266,6 +296,21 @@ class OpenCard(APIView):
             bskeys['connect']['name'] = name
             bskeys['connect']['phone'] = phone
             bskeys['connect']['email'] = email
+            OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
+            return True
+        else:
+            return False
+
+    def saveJianShuInfo(self, openid, info):
+        if OpenCards.objects.filter(openid=openid):
+            query = OpenCards.objects.get(openid=openid)
+            bskeys = model_to_dict(query)['bskeys']
+            if bskeys and bskeys != 'xxx' and bskeys != 'null':
+                bskeys = eval(bskeys)
+            else:
+                bskeys = {}
+            bskeys['jianshu'] = {}
+            bskeys['jianshu'] = info
             OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
             return True
         else:
@@ -296,8 +341,20 @@ class OpenCard(APIView):
                 return Response({"data": res}, status=status.HTTP_200_OK)
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'search' and 'from' in req and req['from'] == 'jianshu' and 'key' in req:
+            res = self.searchJianShu(req['key'])
+            if res:
+                return Response({"data": res}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'juejin':
             res = self.getAndSaveJueJinInfo(req['openid'], req['uid'])
+            if res:
+                return Response({"data": []}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'jianshu':
+            res = self.saveJianShuInfo(req['openid'], req['info'])
             if res:
                 return Response({"data": []}, status=status.HTTP_200_OK)
             else:
@@ -336,6 +393,18 @@ class OpenCard(APIView):
                     data = serializer.data
                     data['bskeys'] = eval(data['bskeys'])
                     return Response({"data": data['bskeys']['connect']}, status=status.HTTP_200_OK)
+                except:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'jianshu':
+            if OpenCards.objects.filter(openid=req['openid']):
+                try:
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
+                    data['bskeys'] = eval(data['bskeys'])
+                    return Response({"data": data['bskeys']['jianshu']}, status=status.HTTP_200_OK)
                 except:
                     return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
