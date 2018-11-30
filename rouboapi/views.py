@@ -225,35 +225,6 @@ class OpenCard(APIView):
         except:
             return None
 
-    def searchJianShu(self, key):
-        """
-        通过简书 API 获取简书搜索信息
-        :param key:
-        :return:
-        """
-        headers = {
-            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 8.0.0; MIX 2 MIUI/8.11.22) okhttp/3.3.0 haruki/4.1.0',
-            'HOST': 's0.jianshuapi.com',
-            'X-App-Name': 'haruki',
-            'X-App-Version': '4.1.0',
-            'X-Device-Guid': '869033024218829',
-            'X-Timestamp': '1543483341',
-            'X-Auth-1': '326b774a36f25bff4b536dd3296a9139',
-            'X-NETWORK': '1',
-            'Connection': 'Keep-Alive',
-            'Accept-Encoding': 'gzip',
-            'If-None-Match': 'W/"db59a468cf84fb228826f34cea88ae90"'
-        }
-
-        result = []
-        try:
-            URL = 'https://s0.jianshuapi.com/v3/search/all?q=' + key
-            resp = requests.get(URL, headers=headers, verify=False)
-            respjson = json.loads(resp.text)
-            result = respjson['users']
-            return result
-        except:
-            return result
 
     def searchJianShuByH5(self, key):
         result = []
@@ -305,7 +276,68 @@ class OpenCard(APIView):
                             if ch.string != ' ':
                                 res['name'] = ch.string.strip()
             result.append(res)
+        if driver:
+            driver.close()
         return result
+
+    def getJianShuInfoByH5(self, openid, uid):
+        if OpenCards.objects.filter(openid=openid):
+            query = OpenCards.objects.get(openid=openid)
+            bskeys = model_to_dict(query)['bskeys']
+            if bskeys and bskeys != 'xxx' and bskeys != 'null':
+                bskeys = eval(bskeys)
+            else:
+                bskeys = {}
+            bskeys['jianshu'] = {}
+            option = webdriver.ChromeOptions()
+            option.add_argument('headless')
+            option.add_argument('--headless')
+            option.add_argument('--disable-gpu')
+            driver = webdriver.Chrome(chrome_options=option, executable_path='/Users/JunJian/Downloads/chromedriver')
+            for page in range(1, 100):
+                driver.get('https://www.jianshu.com/u/' + uid + '?order_by=shared_at&page=' + str(page))
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                # 获取用户信息
+                if 'followers' not in bskeys['jianshu']:
+                    title = soup.find('div', attrs={'class':'title'})
+                    bskeys['jianshu']['name'] = title.a.string.strip()
+                    info = soup.find('div', attrs= {'class':'info'})
+                    count = 0
+                    for ch in info.children:
+                        if isinstance(ch, bs4.element.Tag):
+                            for chch in ch:
+                                if isinstance(chch, bs4.element.Tag):
+                                    if count == 1:
+                                        bskeys['jianshu']['followers'] = chch.div.p.string.strip()
+                                    if count == 2:
+                                        bskeys['jianshu']['postedPosts'] = chch.div.p.string.strip()
+                                    if count == 3:
+                                        bskeys['jianshu']['totalCollections'] = '写了' + chch.div.p.string.strip() + '字,'
+                                    if count == 4:
+                                        bskeys['jianshu']['totalCollections'] = '获得了' + chch.div.p.string.strip() + '个喜欢'
+                                    count += 1
+                # 获取阅读数
+                tags = soup.find('ul', attrs={'class': 'note-list'})
+                count = 0
+                for ch in tags:
+                    if isinstance(ch, bs4.element.Tag):
+                        for chch in ch:
+                            if isinstance(chch, bs4.element.Tag):
+                                try:
+                                    for chchch in chch.div.a:
+                                        if isinstance(chchch, bs4.element.NavigableString) and chchch.string.strip() != '':
+                                            bskeys['jianshu']['totalViews'] += int(chchch.string.strip())
+                                            count += 1
+                                except:
+                                    pass
+                if count < 9:
+                    break
+            bskeys['jianshu']['uid'] = uid
+            OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
+            driver.close()
+            return True
+        return False
+
 
     def getAndSaveJueJinInfo(self, openid, uid):
         """
@@ -459,8 +491,14 @@ class OpenCard(APIView):
                     serializer = OpenCardsSerializer(query)
                     data = serializer.data
                     data['bskeys'] = eval(data['bskeys'])
+                    self.getJianShuInfoByH5(req['openid'], data['bskeys']['jianshu']['uid'])
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
+                    data['bskeys'] = eval(data['bskeys'])
                     return Response({"data": data['bskeys']['jianshu']}, status=status.HTTP_200_OK)
                 except:
-                    return Response({"data": {}}, status=status.HTTP_200_OK)
+                   print('xxx')
+                   return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
                 return Response({"data": {}}, status=status.HTTP_200_OK)
