@@ -225,6 +225,16 @@ class OpenCard(APIView):
         except:
             return None
 
+    def searchGitHub(self, key):
+        result = []
+        URL = 'https://api.github.com/search/users?q=' + key
+        try:
+            resp = requests.get(URL)
+            respjson = json.loads(resp.text)
+            result = respjson['items']
+            return result
+        except:
+            return result
 
     def searchJianShuByH5(self, key):
         result = []
@@ -233,7 +243,7 @@ class OpenCard(APIView):
         option.add_argument('headless')
         option.add_argument('--headless')
         option.add_argument('--disable-gpu')
-        driver = webdriver.Chrome(chrome_options=option, executable_path='/Users/JunJian/Downloads/chromedriver')
+        driver = webdriver.Chrome(chrome_options=option, executable_path='/data/bin/chromedriver')
         driver.get(URL)
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
@@ -293,7 +303,7 @@ class OpenCard(APIView):
             option.add_argument('headless')
             option.add_argument('--headless')
             option.add_argument('--disable-gpu')
-            driver = webdriver.Chrome(chrome_options=option, executable_path='/Users/JunJian/Downloads/chromedriver')
+            driver = webdriver.Chrome(chrome_options=option, executable_path='/data/bin/Downloads/chromedriver')
             for page in range(1, 100):
                 driver.get('https://www.jianshu.com/u/' + uid + '?order_by=shared_at&page=' + str(page))
                 soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -338,6 +348,21 @@ class OpenCard(APIView):
             return True
         return False
 
+    def getGitHubInfo(self, openid, name):
+        """
+        获取具体的github用户信息
+        :param uid:
+        :return:
+        """
+        res = {}
+        URL = 'https://api.github.com/users/' + name
+        try:
+            resp = requests.get(URL)
+            respjson = json.loads(resp.text)
+            res = respjson
+            return res
+        except:
+            return res
 
     def getAndSaveJueJinInfo(self, openid, uid):
         """
@@ -397,7 +422,23 @@ class OpenCard(APIView):
             else:
                 bskeys = {}
             bskeys['jianshu'] = {}
-            bskeys['jianshu'] = info
+            bskeys['jianshu'] = eval(info)
+            OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
+            return True
+        else:
+            return False
+
+    def saveGitHubInfo(self, openid, id, name):
+        if OpenCards.objects.filter(openid=openid):
+            query = OpenCards.objects.get(openid=openid)
+            bskeys = model_to_dict(query)['bskeys']
+            if bskeys and bskeys != 'xxx' and bskeys != 'null':
+                bskeys = eval(bskeys)
+            else:
+                bskeys = {}
+            bskeys['github'] = {}
+            bskeys['github']['id'] = str(id)
+            bskeys['github']['login'] = name
             OpenCards.objects.filter(openid=openid).update(bskeys=str(bskeys).strip())
             return True
         else:
@@ -432,6 +473,18 @@ class OpenCard(APIView):
             res = self.searchJianShuByH5(req['key'])
             if res:
                 return Response({"data": res}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'search' and 'from' in req and req['from'] == 'github' and 'key' in req:
+            res = self.searchGitHub(req['key'])
+            if res:
+                return Response({"data": res}, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'github':
+            res = self.saveGitHubInfo(req['openid'], req['id'], req['login'])
+            if res:
+                return Response({"data": []}, status=status.HTTP_200_OK)
             else:
                 return Response({}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         elif req['type'] == 'save' and 'from' in req and 'openid' in req and req['from'] == 'juejin':
@@ -498,7 +551,19 @@ class OpenCard(APIView):
                     data['bskeys'] = eval(data['bskeys'])
                     return Response({"data": data['bskeys']['jianshu']}, status=status.HTTP_200_OK)
                 except:
-                   print('xxx')
+                   return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'bskeys' and 'openid' in req and 'from' in req and req['from'] == 'github':
+            if OpenCards.objects.filter(openid=req['openid']):
+                try:
+                    query = OpenCards.objects.get(openid=req['openid'])
+                    serializer = OpenCardsSerializer(query)
+                    data = serializer.data
+                    data['bskeys'] = eval(data['bskeys'])
+                    res = self.getGitHubInfo(req['openid'], data['bskeys']['github']['login'])
+                    return Response({"data": res}, status=status.HTTP_200_OK)
+                except:
                    return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
                 return Response({"data": {}}, status=status.HTTP_200_OK)
