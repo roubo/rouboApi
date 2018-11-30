@@ -32,7 +32,7 @@ from bs4 import BeautifulSoup
 import bs4
 from selenium import webdriver
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
 
 
 class DeviceReport(APIView):
@@ -273,10 +273,29 @@ class OpenCard(APIView):
                 if isinstance(child, bs4.element.Tag):
                     if child.attrs and 'href' in child.attrs:
                         res['uid'] = child.attrs['href'].split('/')[2]
+                        res['totalViews'] = 0
+                        for page in range(1, 100):
+                            driver.get('https://www.jianshu.com/u/' + res['uid']+'?order_by=shared_at&page=' + str(page))
+                            soup2 = BeautifulSoup(driver.page_source, 'html.parser')
+                            tags = soup2.find('ul', attrs={'class': 'note-list'})
+                            count = 0
+                            for ch in tags:
+                                if isinstance(ch, bs4.element.Tag):
+                                    for chch in ch:
+                                        if isinstance(chch, bs4.element.Tag):
+                                            try:
+                                                for chchch in chch.div.a:
+                                                    if isinstance(chchch, bs4.element.NavigableString) and chchch.string.strip() != '':
+                                                        res['totalViews'] += int(chchch.string.strip())
+                                                        count += 1
+                                            except:
+                                                pass
+                            if count < 9:
+                                break
                     for ch in child.children:
                         if isinstance(ch, bs4.element.Tag):
                             for chch in ch.children:
-                                if '关注' in chch.string:
+                                if '粉丝' in chch.string:
                                     res['followers'] = chch.string.strip().split(' ')[-1]
                                 if '文章' in chch.string:
                                     res['postedPosts'] = chch.string.strip().split(' ')[-1]
