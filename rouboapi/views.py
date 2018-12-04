@@ -359,7 +359,7 @@ class OpenCard(APIView):
                                         bskeys['jianshu']['totalCollections'] = '写了' + chch.div.p.string.strip() + '字,'
                                     if count == 4:
                                         bskeys['jianshu'][
-                                            'totalCollections'] = '获得了' + chch.div.p.string.strip() + '个喜欢'
+                                            'totalCollections'] += '获得了' + chch.div.p.string.strip() + '个喜欢'
                                     count += 1
                 else:
                     # 不再获取阅读量，故直接返回
