@@ -404,6 +404,22 @@ class OpenCard(APIView):
         except:
             return res
 
+    def getGitHubRepos(self, name):
+        """
+        (实时获取）获取具体的github用户的仓库列表
+        :param name:
+        :return:
+        """
+        res = {}
+        URL = 'https://api.github.com/users/' + name + '/repos'
+        try:
+            resp = requests.get(URL)
+            respjson = json.loads(resp.text)
+            res = respjson
+            return res
+        except:
+            return res
+
     def getAndSaveJueJinInfo(self, openid, uid):
         """
         实时获取具体的掘金用户信息（接口）
@@ -651,3 +667,9 @@ class OpenCard(APIView):
                     return Response({"data": {}}, status=status.HTTP_200_OK)
             else:
                 return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'repo' and 'from' in req and req['from'] == 'github':
+            try:
+                res = self.getGitHubRepos(req['login'])
+                return Response({"data": res}, status=status.HTTP_200_OK)
+            except:
+                return Response({"data":{}}, status=status.HTTP_200_OK)
