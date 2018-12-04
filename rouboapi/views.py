@@ -411,7 +411,23 @@ class OpenCard(APIView):
         :return:
         """
         res = {}
-        URL = 'https://api.github.com/users/' + name + '/repos'
+        URL = 'https://api.github.com/users/' + name + '/repos?type=all&sort=updated'
+        try:
+            resp = requests.get(URL)
+            respjson = json.loads(resp.text)
+            res = respjson
+            return res
+        except:
+            return res
+
+    def getGitHubRepoContrib(self, name, repo):
+        """
+        (实时获取）获取具体的github仓库的贡献
+        :param name:
+        :return:
+        """
+        res = {}
+        URL = 'https://api.github.com/repos/' + name + '/' + repo + '/stats/commit_activity'
         try:
             resp = requests.get(URL)
             respjson = json.loads(resp.text)
@@ -670,6 +686,12 @@ class OpenCard(APIView):
         elif req['type'] == 'repo' and 'from' in req and req['from'] == 'github':
             try:
                 res = self.getGitHubRepos(req['login'])
+                return Response({"data": res}, status=status.HTTP_200_OK)
+            except:
+                return Response({"data":{}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'contrib' and 'from' in req and req['from'] == 'github':
+            try:
+                res = self.getGitHubRepoContrib(req['login'], req['repo'])
                 return Response({"data": res}, status=status.HTTP_200_OK)
             except:
                 return Response({"data":{}}, status=status.HTTP_200_OK)
