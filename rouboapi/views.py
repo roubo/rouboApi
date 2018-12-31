@@ -1,4 +1,5 @@
 from rouboapi.serializers import DeviceReportSerializer
+from rouboapi.serializers import WxDeviceReportSerializer
 from rouboapi.serializers import Respage01Serializer
 from rouboapi.serializers import Respage02Serializer
 from rouboapi.serializers import Respage01CountSerializer
@@ -8,6 +9,7 @@ from rouboapi.serializers import Respage01UnionSerializer
 from rouboapi.serializers import ProductHuntDayTopSerializer
 from rouboapi.serializers import ProductHuntMonthTopSerializer
 from rouboapi.serializers import OpenCardsSerializer
+from rouboapi.serializers import OpenOkrSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -19,6 +21,7 @@ from rouboapi.models import Respage02Info
 from rouboapi.models import ProductHuntMonthTop
 from rouboapi.models import ProductHuntDayTop
 from rouboapi.models import OpenCards
+from rouboapi.models import OpenOkr
 from django.db.models import Count
 from datetime import datetime, timedelta
 import pandas as pd
@@ -52,6 +55,26 @@ class DeviceReport(APIView):
         """
         print(request.query_params)
         serializer = DeviceReportSerializer(data=request.query_params)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class WxDeviceReport(APIView):
+    """
+    上报设备信息
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, format=None):
+        """
+        :param  report_type: 上报类型，比如启动上报：open
+        :param  report_time: 上报时间戳
+        :param  system_info: 设备信息
+        :param  page_info: 页面信息
+        """
+        serializer = WxDeviceReportSerializer(data=request.query_params)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -688,10 +711,143 @@ class OpenCard(APIView):
                 res = self.getGitHubRepos(req['login'])
                 return Response({"data": res}, status=status.HTTP_200_OK)
             except:
-                return Response({"data":{}}, status=status.HTTP_200_OK)
+                return Response({"data": {}}, status=status.HTTP_200_OK)
         elif req['type'] == 'contrib' and 'from' in req and req['from'] == 'github':
             try:
                 res = self.getGitHubRepoContrib(req['login'], req['repo'])
                 return Response({"data": res}, status=status.HTTP_200_OK)
             except:
-                return Response({"data":{}}, status=status.HTTP_200_OK)
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+
+
+class OpenCard(APIView):
+    """
+    OpenCards
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def wxCode2Session(self, code):
+        """
+        微信 code2Session 实现
+        :param code:
+        :return:
+        """
+        # 非真实
+        AppId = 'wx17dddea5d4fa8dce'
+        AppSecret = 'd5fe0741bc02f11820f459274d2299be'
+        try:
+            URL = 'https://api.weixin.qq.com/sns/jscode2session?appid=' + AppId + \
+                  "&secret=" + AppSecret + \
+                  "&js_code=" + code + \
+                  "&grant_type=authorization_code"
+            resp = requests.get(URL)
+            return json.loads(resp.text)
+        except:
+            return None
+
+    # --------------------------------------------------------------------
+    # openOkr  保存用户信息
+    # 接口特点: 只保存关键数据，与 openid 做好映射
+    # --------------------------------------------------------------------
+    def setUserInfo(self, openid, userinfo):
+        """
+         保存用户信息
+        :param openid:
+        :param userinfo:
+        :return:
+        """
+        if OpenOkr.objects.filter(openid=openid):
+            if userinfo is not None and userinfo != '':
+                OpenOkr.objects.filter(openid=openid).update(userinfo=str(userinfo).strip())
+                return True
+        else:
+            return False
+
+    # --------------------------------------------------------------------
+    # openOkr  保存okr 列表
+    # 接口特点: 只保存关键数据，与 openid 做好映射
+    # --------------------------------------------------------------------
+    def setOkrList(self, openid, okrlist):
+        """
+         保存用户信息
+        :param openid:
+        :param okrlist:
+        :return:
+        """
+        if OpenOkr.objects.filter(openid=openid):
+            if okrlist is not None and okrlist != '':
+                OpenOkr.objects.filter(openid=openid).update(okrlist=str(okrlist).strip())
+                return True
+        else:
+            return False
+
+    def get(self, request, format=None):
+        """
+        接口入口：待规范
+        :param request:
+        :param format:
+        :return:
+        """
+        req = request.query_params
+        # 通用参数检测
+        if 'type' not in req:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        # 微信用户鉴权
+        if req['type'] == 'login' and 'wxcode' in req:
+            res = self.wxCode2Session(req['wxcode'])
+            if not res or 'openid' not in res:
+                return Response({"data": ""}, status=status.HTTP_200_OK)
+            else:
+                openid = res['openid']
+                session_key = res['session_key']
+                if OpenOkr.objects.filter(openid=openid):
+                    OpenOkr.objects.filter(openid=openid).update(session_key=session_key)
+                else:
+                    data = "openid=" + openid + "&userinfo=null&backup=null&okrlist=null&session_key=" + session_key
+                    serializer = OpenOkrSerializer(data=QueryDict(data))
+                    if serializer.is_valid():
+                        serializer.save()
+                return Response({"data": {"openid": openid}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'getuserinfo' and 'openid' in req:
+            if OpenOkr.objects.filter(openid=req['openid']):
+                try:
+                    query = OpenOkr.objects.get(openid=req['openid'])
+                    serializer = OpenOkrSerializer(query)
+                    data = serializer.data
+                    data['userinfo'] = eval(data['userinfo'])
+                    return Response({"data": data['userinfo']}, status=status.HTTP_200_OK)
+                except:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'setuserinfo' and 'openid' in req and 'userinfo' in req:
+            try:
+                res = self.setUserInfo(req['openid'], req['userinfo'])
+                if res:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except:
+                return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif req['type'] == 'getokrlist' and 'openid' in req:
+            if OpenOkr.objects.filter(openid=req['openid']):
+                try:
+                    query = OpenOkr.objects.get(openid=req['openid'])
+                    serializer = OpenOkrSerializer(query)
+                    data = serializer.data
+                    data['okrlist'] = eval(data['okrlist'])
+                    return Response({"data": data['okrlist']}, status=status.HTTP_200_OK)
+                except:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+            else:
+                return Response({"data": {}}, status=status.HTTP_200_OK)
+        elif req['type'] == 'setokrlist' and 'openid' in req and 'okrlist' in req:
+            try:
+                res = self.setOkrList(req['openid'], req['okrlist'])
+                if res:
+                    return Response({"data": {}}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except:
+                return Response({'data': {}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

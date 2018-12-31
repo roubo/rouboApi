@@ -7,8 +7,10 @@ API_DESCRIPTION = '一些用于业余研究的自维护 api，如有疑问请联
 urlpatterns = [
     url(r'docs/', include_docs_urls(title=API_TITLE, description=API_DESCRIPTION, authentication_classes=[], permission_classes=[])),
     url(r'v1/report/$', views.DeviceReport.as_view(), name='DeviceReport'),
+    url(r'v1/wxreport/$', views.WxDeviceReport.as_view(), name='WxDeviceReport'),
     url(r'v1/respage01/$', views.Respage01.as_view(), name='Respage01'),
     url(r'v1/respage02/$', views.Respage02.as_view(), name='Respage02'),
     url(r'v1/producthunt/top$', views.ProductHuntTop.as_view(), name='ProductHuntTop'),
     url(r'v1/opencard/$', views.OpenCard.as_view(), name='OpenCards'),
+    url(r'v1/openokr/$', views.OpenOkr.as_view(), name='OpenOkr'),
 ]

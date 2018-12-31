@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rouboapi.models import DeviceReport
+from rouboapi.models import WxDeviceReport
 from rouboapi.models import Respage01Info
 from rouboapi.models import Respage01Gone
 from rouboapi.models import Respage01New
@@ -9,6 +10,7 @@ from rouboapi.models import Respage02Info
 from rouboapi.models import ProductHuntDayTop
 from rouboapi.models import ProductHuntMonthTop
 from rouboapi.models import OpenCards
+from rouboapi.models import OpenOkr
 
 
 class DeviceReportSerializer(serializers.HyperlinkedModelSerializer):
@@ -19,6 +21,16 @@ class DeviceReportSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DeviceReport
         fields = ('report_type', 'report_time', 'device_id', 'ip_address')
+
+
+class WxDeviceReportSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    序列化上报接口数据
+    """
+
+    class Meta:
+        model = WxDeviceReport
+        fields = ('report_type', 'report_time', 'system_info', 'page_info')
 
 
 class Respage01Serializer(serializers.HyperlinkedModelSerializer):
@@ -106,4 +118,12 @@ class OpenCardsSerializer(serializers.HyperlinkedModelSerializer):
         model = OpenCards
         fields = (
             'openid', 'userinfo', 'bskeys', 'backup', 'session_key'
+        )
+
+
+class OpenOkrSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = OpenOkr
+        fields = (
+            'openid', 'userinfo', 'okrlist', 'backup', 'session_key'
         )

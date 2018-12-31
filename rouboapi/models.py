@@ -20,6 +20,23 @@ class DeviceReport(models.Model):
     device_id = models.CharField(max_length=200)
     ip_address = models.CharField(max_length=50)
 
+class WxDeviceReport(models.Model):
+    """
+    收集设备相关的统计数据
+    report_type
+        上报类型，比如启动上报：open
+    report_time
+        上报时间戳
+    system_info
+        可以描述设备的system info
+    page_info
+        可以描述页面的page info
+    """
+    report_type = models.CharField(max_length=100)
+    report_time = models.DateTimeField(auto_now_add=True)
+    system_info = models.CharField(max_length=512)
+    page_info = models.CharField(max_length=512)
+
 
 class Respage01Info(models.Model):
     """
@@ -167,3 +184,21 @@ class OpenCards(models.Model):
 
     class Meta:
         db_table = "opencards"
+
+
+class OpenOkr(models.Model):
+    """
+    OpenOkr 项目
+    openid: 微信 openid
+    userinfo: 用户信息
+    orklist: 业务值
+    backup：备用
+    """
+    openid = models.CharField(max_length=200)
+    userinfo = models.CharField(max_length=512)
+    okrlist = models.CharField(max_length=3096)
+    backup = models.CharField(max_length=2048)
+    session_key = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = "openokr"
